@@ -3,7 +3,7 @@ use std::fs;
 // Rock paper scissors battles
 
 
-
+#[derive(Clone, Copy)]
 enum Action {
     A = 'A' as isize,
     B = 'B' as isize,
@@ -21,74 +21,75 @@ impl Action {
     }
 }
 
-enum Response {
+enum ExpectedResult {
     X = 'X' as isize,
     Y = 'Y' as isize,
     Z = 'Z' as isize,
 }
 
-impl Response {
-    fn from_char(i: char) -> Response {
+impl ExpectedResult {
+    fn from_char(i: char) -> ExpectedResult {
         match i {
-            'X' => Response::X,
-            'Y' => Response::Y,
-            'Z' => Response::Z,
+            'X' => ExpectedResult::X,
+            'Y' => ExpectedResult::Y,
+            'Z' => ExpectedResult::Z,
             _ => panic!("Invalid action"),
         }
     }
 }
 
-struct FirstPlayer {
+struct Player {
     action: Action,
-    weakness: Response,
-}
-
-impl FirstPlayer {
-    fn new(action: Action) -> FirstPlayer {
-        let weakness: Response;
-        match action {
-            Action::A => weakness = Response::Y,
-            Action::B => weakness = Response::Z,
-            Action::C => weakness = Response::X,
-        }
-        FirstPlayer {
-            action,
-            weakness,
-        }
-    }
-}
-
-struct SecondPlayer {
-    action: Response,
     value: u32,
     weakness: Action,
 }
 
-impl SecondPlayer {
-    fn new(action: Response) -> SecondPlayer {
+impl Player {
+    fn from_action(action: Action) -> Player {
         let weakness: Action;
         let value: u32;
         match action {
-            Response::X => {
+            Action::A => {
                 value = 1;
                 weakness = Action::B;
             },
-            Response::Y => {
+            Action::B => {
                 value = 2;
                 weakness = Action::C;
             }
-            Response::Z => {
+            Action::C => {
                 value = 3;
                 weakness = Action::A;
             }
         }
-        SecondPlayer {
-            action,
+        Player {
+            action: action.clone(),
             value,
             weakness,
         }
     }
+
+    fn from_player_expected(player_action: Action, result: ExpectedResult) -> Player {
+        match result {
+            ExpectedResult::X => {
+                match player_action {
+                    Action::A => Player::from_action(Action::C),
+                    Action::B => Player::from_action(Action::A),
+                    Action::C => Player::from_action(Action::B),
+                }
+            },
+            ExpectedResult::Y => Player::from_action(player_action),
+            ExpectedResult::Z => {
+                match player_action {
+                    Action::A => Player::from_action(Action::B),
+                    Action::B => Player::from_action(Action::C),
+                    Action::C => Player::from_action(Action::A),
+                }
+            },
+        }
+    }
 }
+
 
 pub fn get_file_path(args: &[String]) -> Result<String, &'static str> {
     if args.len() < 2 {
@@ -107,7 +108,7 @@ pub fn run(input_file: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn fight(p1: FirstPlayer, p2: SecondPlayer) -> u32 {
+fn fight(p1: Player, p2: Player) -> u32 {
     let result: u32;
     if p1.action as u32 == p2.weakness as u32 {
         result = 0;
@@ -122,7 +123,6 @@ fn fight(p1: FirstPlayer, p2: SecondPlayer) -> u32 {
 fn get_total_score(input: &str) -> u32 {
     let mut total: u32 = 0;
     for line in input.lines() {
-        println!("Total: {}", total);
         total += get_single_score(line);
     }
     total
@@ -133,9 +133,9 @@ fn get_single_score(line: &str) -> u32 {
 
     let left = split.next().unwrap().as_bytes()[0];
     let right = split.next().unwrap().as_bytes()[0];
-    println!("{} {}", left as char, right as char);
-    let p1 = FirstPlayer::new(Action::from_char(left as char));
-    let p2 = SecondPlayer::new(Response::from_char(right as char));
+
+    let p1 = Player::from_action(Action::from_char(left as char));
+    let p2 = Player::from_player_expected(p1.action, ExpectedResult::from_char(right as char));
 
     fight(p1, p2)
 }
