@@ -10,7 +10,12 @@ fn main() {
     });
     println!("File path: {}", input_file);
 
-    if let Err(e) = day_3::run(&input_file) {
+    if let Err(e) = day_3::task_1(&input_file) {
+        println!("Application error: {}", e);
+        process::exit(1);
+    }
+
+    if let Err(e) = day_3::task_2(&input_file) {
         println!("Application error: {}", e);
         process::exit(1);
     }
